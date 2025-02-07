@@ -1,4 +1,4 @@
-const express = require('express')
+/* const express = require('express')
 const mysql = require ('mysql2')
 const app = express();
 
@@ -129,4 +129,20 @@ app.delete("/delete/:email", async (req, res) => {
 
 
 
-app.listen(3000, () => console.log('Server is running on port 3000'));
+app.listen(3000, () => console.log('Server is running on port 3000')); */
+const express = require("express");
+const bodyParser = require("body-parser");
+const { downloadAndExtract } = require("./controllers/installController");  // เพิ่มการ import ฟังก์ชัน
+
+const app = express();
+const PORT = 3000;
+
+app.use(bodyParser.json());  // ใช้ bodyParser สำหรับรับข้อมูลแบบ JSON
+
+// เพิ่ม API ที่รับ POST request
+app.post("/api/install", downloadAndExtract);
+
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
+});
+
