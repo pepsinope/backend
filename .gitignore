@@ -1,1 +1,8 @@
+# เพิ่มไฟล์ .env
 .env
+
+# เพิ่มไฟล์ที่ไม่ต้องการ commit
+node_modules/
+*.pem
+*.key
+*.rsa
