@@ -1,11 +1,20 @@
-const mysql = require('mysql2/promise');
+import mysql from "mysql2";
 
 const pool = mysql.createPool({
-    host: 'localhost',
-    user: 'root',
-    password: '',
-    database: 'cspp_database',
-    port: 3306
+  host: process.env.DB_HOST || "localhost",
+  user: process.env.DB_USER || "root",
+  password: process.env.DB_PASSWORD || "",
+  database: process.env.DB_NAME || "cspp_database",
+  port: process.env.DB_PORT || 3306,
 });
 
-module.exports = pool;
+pool.getConnection((err, connection) => {
+  if (err) {
+    console.log("❌ Error connecting to MySQL:", err);
+    return;
+  }
+  console.log("✅ MySQL connected!");
+  connection.release();
+});
+
+export default pool;
