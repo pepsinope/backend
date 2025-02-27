@@ -1,4 +1,89 @@
 import pool from '../config/db.js'; 
+import { downloadAndUploadFiles , createRemoteFolder ,removeRemoteFolder} from './sshController.js';
+
+export const installSoftware = async (req, res) => {
+  try {
+    const { software_id } = req.body;
+
+    if (!software_id) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // ดึงข้อมูลซอฟต์แวร์จากฐานข้อมูล
+    const query = `
+      SELECT s.name_software AS software_name, sf.file_url
+      FROM software s
+      JOIN software_files sf ON s.id = sf.software_id
+      WHERE s.id = ?
+    `;
+
+    const [results] = await pool.query(query, [software_id]);
+
+    if (!results || results.length === 0) {
+      return res.status(404).json({ message: "ไม่พบข้อมูลซอฟต์แวร์" });
+    }
+
+    const { software_name } = results[0];
+    const remotePath = `/home/jpss/beam/load/${software_name}`;
+
+    // สร้างโฟลเดอร์ปลายทาง
+    await createRemoteFolder(remotePath);
+
+    // เตรียมไฟล์ทั้งหมดที่จะดาวน์โหลด
+    const filesToDownload = results.map(result => ({ url: result.file_url }));
+
+    // ดาวน์โหลดและอัปโหลดไฟล์ไปยังโฟลเดอร์ที่สร้าง
+    await downloadAndUploadFiles(filesToDownload, remotePath);
+
+    // อัปเดตสถานะการติดตั้งในฐานข้อมูล
+    await pool.query("UPDATE software SET status = 1 WHERE id = ?", [software_id]);
+
+    return res.json({ message: "ติดตั้งซอฟต์แวร์สำเร็จ", software_id, status: 1 });
+
+  } catch (error) {
+    console.error("❌ ติดตั้งซอฟต์แวร์ล้มเหลว:", error);
+    await pool.query("UPDATE software SET status = 2 WHERE id = ?", [software_id]);
+    return res.status(500).json({ message: "เกิดข้อผิดพลาดในการติดตั้ง", error: error.message });
+  }
+};
+
+export const uninstallSoftware = async (req, res) => {
+  try {
+    const { software_id } = req.body;
+
+    if (!software_id) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // ดึงข้อมูลซอฟต์แวร์จากฐานข้อมูล
+    const query = `
+      SELECT s.name_software AS software_name
+      FROM software s
+      WHERE s.id = ?
+    `;
+
+    const [results] = await pool.query(query, [software_id]);
+
+    if (!results || results.length === 0) {
+      return res.status(404).json({ message: "ไม่พบข้อมูลซอฟต์แวร์" });
+    }
+
+    const { software_name } = results[0];
+    const remotePath = `/home/jpss/beam/load/${software_name}`;
+
+    // ลบโฟลเดอร์ของซอฟต์แวร์
+    await removeRemoteFolder(remotePath);
+
+    // อัปเดตสถานะการติดตั้งในฐานข้อมูล
+    await pool.query("UPDATE software SET status = 0 WHERE id = ?", [software_id]);
+
+    return res.json({ message: "ถอนการติดตั้งซอฟต์แวร์สำเร็จ", software_id, status: 0 });
+
+  } catch (error) {
+    console.error("❌ ถอนการติดตั้งซอฟต์แวร์ล้มเหลว:", error);
+    return res.status(500).json({ message: "เกิดข้อผิดพลาดในการถอนการติดตั้ง", error: error.message });
+  }
+};
 
 export const getCategories = async (req, res) => {
     try {
@@ -17,37 +102,10 @@ export const getCategories = async (req, res) => {
       res.status(500).json({ error: 'Internal Server Error' });
     }
   };
-
-  // อัปเดตสถานะติดตั้งซอฟต์แวร์
-  export const updateSoftwareStatus = (req, res) => {
-    console.log("Received Request:", req.body); // ตรวจสอบค่าที่ส่งมา
   
-    const { software_id, status } = req.body;
-  
-    if (software_id == null || status == null) {
-      return res.status(400).json({ error: 'Missing software_id or status' });
-    }
-  
-    const query = 'UPDATE software SET status = ? WHERE id = ?';
-  
-    pool.query(query, [status, software_id])
-      .then(([results]) => {
-        console.log("Database Update Result:", results);
-        if (results.affectedRows === 0) {
-          return res.status(404).json({ error: 'Software not found' });
-        }
-  
-        res.status(200).json({ message: 'Status updated successfully' });
-      })
-      .catch((err) => {
-        console.error('Error during query execution:', err);
-        return res.status(500).json({ error: 'Failed to update status', details: err });
-      });
-  };
-
   export const getSoftwareFiles = async (req, res) => {
     try {
-      console.log("Received request:", req.query.categories);
+      //console.log("Received request:", req.query.categories);
   
       const [rows] = await pool.query(`
         SELECT software.id AS software_id, software.categories, software.title, software.status,
@@ -84,7 +142,7 @@ export const getCategories = async (req, res) => {
         return acc;
       }, {});
   
-      console.log("Final JSON:", Object.values(softwareGrouped));
+      //console.log("Final JSON:", Object.values(softwareGrouped));
   
       res.setHeader("Content-Type", "application/json");
       res.status(200).json({ software_files: Object.values(softwareGrouped) });
