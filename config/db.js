@@ -8,13 +8,18 @@ const pool = mysql.createPool({
   port: process.env.DB_PORT || 3306,
 });
 
-pool.getConnection((err, connection) => {
-  if (err) {
+// ใช้ async/await ในการเชื่อมต่อ MySQL
+const connectToDatabase = async () => {
+  try {
+    // ใช้ query test เพื่อทดสอบการเชื่อมต่อ
+    const [rows, fields] = await pool.query('SELECT 1');
+    console.log("✅ MySQL connected!");
+  } catch (err) {
     console.log("❌ Error connecting to MySQL:", err);
-    return;
   }
-  console.log("✅ MySQL connected!");
-  connection.release();
-});
+};
+
+// เรียกฟังก์ชันการเชื่อมต่อ
+connectToDatabase();
 
 export default pool;
