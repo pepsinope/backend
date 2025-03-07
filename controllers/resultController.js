@@ -1,27 +1,28 @@
 import pool from "../config/db.js";
 
-export const addResult = (req, res) => {
+export const addResult = async (req, res) => {
   const { date, filename, image, status, save } = req.body;
 
-  pool.query(
-    "INSERT INTO snpp (date, filename, image, status, save) VALUES (?, ?, ?, ?, ?)",
-    [date, filename, image, status, save],
-    (err, results) => {
-      if (err) {
-        console.log("❌ Error inserting data:", err);
-        return res.status(400).send();
-      }
-      res.status(201).json({ message: "✅ New result added!" });
-    }
-  );
+  try {
+    const [results] = await pool.query(
+      "INSERT INTO snpp (date, filename, image, status, save) VALUES (?, ?, ?, ?, ?)",
+      [date, filename, image, status, save]
+    );
+
+    res.status(201).json({ message: "✅ New result added!", results });
+  } catch (err) {
+    console.error("❌ Error inserting data:", err);
+    res.status(500).json({ message: "Something went wrong!", error: err.message });
+  }
 };
 
-export const getResults = (req, res) => {
-  pool.query("SELECT * FROM snpp", (err, results) => {
-    if (err) {
-      console.log("❌ Error fetching data:", err);
-      return res.status(400).send();
-    }
+
+export const getResults = async (req, res) => {
+  try {
+    const [results] = await pool.query("SELECT * FROM snpp");
     res.status(200).json(results);
-  });
+  } catch (err) {
+    console.error("❌ Error fetching data:", err);
+    res.status(500).json({ message: "Something went wrong!", error: err.message });
+  }
 };

@@ -1,9 +1,8 @@
-/* import express from "express";
-import { runCommand } from "../controllers/sshController.js";
+import express from "express";
 
 const router = express.Router();
 
-router.get("/api/run-command", runCommand);
+// ❌ ลบ route ที่เรียก `runCommand` ออก
+// router.get("/api/run-command", async (req, res) => { ... });
 
-
-export default router; */
+export default router;

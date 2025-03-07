@@ -1,15 +1,20 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import softwareRoutes from "./routes/softwareRoutes.js";
+import bodyParser from "body-parser";
+import installRoutes from "./routes/installRoutes.js";
+import uploadRoutes from "./controllers/uploadController.js";
 import resultRoutes from "./routes/resultRoutes.js";
-import installRoutes from './routes/installRoutes.js';
+import softwareRoutes from "./routes/softwareRoutes.js";
 
-dotenv.config(); // โหลดค่าจากไฟล์ .env
+
+dotenv.config();// โหลดค่าจากไฟล์ .env
 
 const app = express();
 app.use(express.json());
 app.use(cors());
+app.use(bodyParser.json());
+app.use(express.urlencoded({ extended: true }));
 
 // ✅ ตั้งค่า CORS ให้ React เรียก API ได้
 app.use(
@@ -23,6 +28,8 @@ app.use(
 app.use("/software", softwareRoutes); // ใช้ route /software
 app.use(resultRoutes);
 app.use("/install", installRoutes);
+app.use(uploadRoutes);
+app.use(resultRoutes);
 
 // ✅ Route ทดสอบว่าเซิร์ฟเวอร์ทำงานหรือไม่
 app.get("/", (req, res) => {
@@ -36,6 +43,13 @@ app.use((err, req, res, next) => {
     message: "Something went wrong!",
     error: err.message,
   });
+});
+
+// 📌 API สำหรับหยุดรันเซิร์ฟเวอร์
+app.post("/shutdown", (req, res) => {
+  console.log("🛑 Server is shutting down...");
+  res.json({ message: "Server shutting down..." });
+  process.exit(0);
 });
 
 const PORT = process.env.PORT || 3000;

@@ -1,9 +1,12 @@
 import express from "express";
-import { checkSoftwareStatus } from "../controllers/softwareController.js";
+import { getSoftwareList, checkSoftwareStatus } from "../controllers/softwareController.js";
 
 const router = express.Router();
 
-// ✅ Route ตรวจสอบสถานะซอฟต์แวร์
-router.get("/check-status", checkSoftwareStatus);
+// ✅ ดึงรายชื่อซอฟต์แวร์ทั้งหมด
+router.get("/software-list", getSoftwareList);
+
+// ✅ เช็คสถานะและระดับ (level) ของซอฟต์แวร์
+router.get("/check-software-status", checkSoftwareStatus);
 
 export default router;
