@@ -1,7 +1,7 @@
 import pool from '../config/db.js'; 
 import { downloadAndUploadFiles , createRemoteFolder ,removeRemoteFolder} from './sshController.js';
 
-export const installSoftware = async (req, res) => {
+/* export const installSoftware = async (req, res) => {
   try {
     const { software_id } = req.body;
 
@@ -83,7 +83,101 @@ export const uninstallSoftware = async (req, res) => {
     console.error("❌ ถอนการติดตั้งซอฟต์แวร์ล้มเหลว:", error);
     return res.status(500).json({ message: "เกิดข้อผิดพลาดในการถอนการติดตั้ง", error: error.message });
   }
+}; */
+
+export const installSoftware = async (req, res) => {
+  try {
+    const { software_id } = req.body;
+
+    if (!software_id) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // ดึงข้อมูลซอฟต์แวร์จากฐานข้อมูล
+    const query = `
+      SELECT s.name_software AS software_name, sf.file_url
+      FROM software s
+      JOIN software_files sf ON s.id = sf.software_id
+      WHERE s.id = ?
+    `;
+
+    const [results] = await pool.query(query, [software_id]);
+
+    if (!results || results.length === 0) {
+      return res.status(404).json({ message: "ไม่พบข้อมูลซอฟต์แวร์" });
+    }
+
+    const { software_name } = results[0];
+    const remotePath = `/home/jpss/beam/load/${software_name}`;
+
+    // สร้างโฟลเดอร์ปลายทาง
+    await createRemoteFolder(remotePath);
+
+    // เตรียมไฟล์ทั้งหมดที่จะดาวน์โหลด
+    const filesToDownload = results.map(result => ({ url: result.file_url }));
+
+    // ดาวน์โหลดและอัปโหลดไฟล์ไปยังโฟลเดอร์ที่สร้าง
+    await downloadAndUploadFiles(filesToDownload, remotePath);
+
+    // อัปเดตสถานะการติดตั้งในฐานข้อมูล
+    await pool.query("UPDATE software SET status = 1 WHERE id = ?", [software_id]);
+
+    return res.json({
+    message: "ติดตั้งซอฟต์แวร์สำเร็จ",
+    software_id,
+    status: 1,
+    result: { status: 'true' }
+});
+
+  } catch (error) {
+    console.error("❌ ติดตั้งซอฟต์แวร์ล้มเหลว:", error);
+    await pool.query("UPDATE software SET status = 2 WHERE id = ?", [software_id]);
+    return res.status(500).json({ message: "เกิดข้อผิดพลาดในการติดตั้ง", error: error.message });
+  }
 };
+
+
+export const uninstallSoftware = async (req, res) => {
+  try {
+    const { software_id } = req.body;
+    if (!software_id) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+
+    const sendProgress = (message, percent) => {
+      res.write(`data: ${JSON.stringify({ message, percent })}\n\n`);
+    };
+
+    sendProgress("🔍 กำลังตรวจสอบข้อมูลซอฟต์แวร์...", 10);
+    const query = `SELECT s.name_software AS software_name FROM software s WHERE s.id = ?`;
+    const [results] = await pool.query(query, [software_id]);
+    if (!results || results.length === 0) {
+      sendProgress("❌ ไม่พบข้อมูลซอฟต์แวร์", 100);
+      return res.end();
+    }
+
+    const { software_name } = results[0];
+    const remotePath = `/home/jpss/beam/load/${software_name}`;
+    
+    sendProgress("🗑️ กำลังลบโฟลเดอร์...", 50);
+    await removeRemoteFolder(remotePath);
+
+    sendProgress("✅ ถอนการติดตั้งสำเร็จ!", 100);
+    await pool.query("UPDATE software SET status = 0 WHERE id = ?", [software_id]);
+    
+    res.end();
+  } catch (error) {
+    console.error("❌ ถอนการติดตั้งล้มเหลว:", error);
+    sendProgress("❌ ถอนการติดตั้งล้มเหลว", 100);
+    res.end();
+  }
+};
+
+
 
 export const getCategories = async (req, res) => {
     try {
@@ -95,7 +189,7 @@ export const getCategories = async (req, res) => {
         return res.status(404).json({ error: 'No categories found' });
       }
   
-      console.log('Query results:', results);
+      //console.log('Query results:', results);
       res.json(results);
     } catch (err) {
       console.error('Unexpected error:', err);
@@ -116,7 +210,7 @@ export const getCategories = async (req, res) => {
         WHERE software.categories = ?
       `, [req.query.categories]);
   
-      console.log("DB Result:", rows);
+      //console.log("DB Result:", rows);
   
       if (!rows.length) {
         return res.status(404).json({ message: "No data found" });

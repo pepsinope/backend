@@ -3,7 +3,6 @@ import dotenv from "dotenv";
 import cors from "cors";
 import softwareRoutes from "./routes/softwareRoutes.js";
 import resultRoutes from "./routes/resultRoutes.js";
-import sshRoutes from "./routes/sshRoutes.js";
 import installRoutes from './routes/installRoutes.js';
 
 dotenv.config(); // โหลดค่าจากไฟล์ .env
@@ -23,7 +22,6 @@ app.use(
 // ✅ ใช้ Routes ที่แยกออกมา
 app.use("/software", softwareRoutes); // ใช้ route /software
 app.use(resultRoutes);
-app.use(sshRoutes);
 app.use("/install", installRoutes);
 
 // ✅ Route ทดสอบว่าเซิร์ฟเวอร์ทำงานหรือไม่
