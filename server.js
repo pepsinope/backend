@@ -59,6 +59,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+<<<<<<< HEAD
 import softwareRoutes from "./routes/softwareRoutes.js";
 import resultRoutes from "./routes/resultRoutes.js";
 import sshRoutes from "./routes/sshRoutes.js";
@@ -96,6 +97,17 @@ const sshConfig = {
  
 dotenv.config(); // โหลดค่าจากไฟล์ .env
  
+=======
+import bodyParser from "body-parser";
+import installRoutes from "./routes/installRoutes.js";
+import uploadRoutes from "./controllers/uploadController.js";
+import resultRoutes from "./routes/resultRoutes.js";
+import softwareRoutes from "./routes/softwareRoutes.js";
+
+
+dotenv.config();// โหลดค่าจากไฟล์ .env
+
+>>>>>>> febe2e5caea78b0ab08a37447b6668437d3e0001
 const app = express();
 app.use(express.json());
 app.use(cors());
@@ -116,7 +128,6 @@ app.use(
 // ✅ ใช้ Routes ที่แยกออกมา
 app.use("/software", softwareRoutes); // ใช้ route /software
 app.use(resultRoutes);
-app.use(sshRoutes);
 app.use("/install", installRoutes);
 app.use(uploadRoutes);
  
