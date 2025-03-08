@@ -108,7 +108,7 @@ export const installSoftware = async (req, res) => {
     }
 
     const { software_name } = results[0];
-    const remotePath = `/home/jpss/beam/load/${software_name}`;
+    const remotePath = `/home/jpss/Software/${software_name}`;
 
     // สร้างโฟลเดอร์ปลายทาง
     await createRemoteFolder(remotePath);
@@ -161,7 +161,7 @@ export const uninstallSoftware = async (req, res) => {
     }
 
     const { software_name } = results[0];
-    const remotePath = `/home/jpss/beam/load/${software_name}`;
+    const remotePath = `/home/jpss/Software/${software_name}`;
     
     sendProgress("🗑️ กำลังลบโฟลเดอร์...", 50);
     await removeRemoteFolder(remotePath);
