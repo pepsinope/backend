@@ -86,8 +86,10 @@ export const uninstallSoftware = async (req, res) => {
 }; */
 
 export const installSoftware = async (req, res) => {
+  let software_id; // 🔹 ประกาศตัวแปรไว้ก่อน
+
   try {
-    const { software_id } = req.body;
+    software_id = req.body.software_id; // 🔹 กำหนดค่าใน try
 
     if (!software_id) {
       return res.status(400).json({ message: "Missing required fields" });
@@ -123,18 +125,24 @@ export const installSoftware = async (req, res) => {
     await pool.query("UPDATE software SET status = 1 WHERE id = ?", [software_id]);
 
     return res.json({
-    message: "ติดตั้งซอฟต์แวร์สำเร็จ",
-    software_id,
-    status: 1,
-    result: { status: 'true' }
-});
+      message: "ติดตั้งซอฟต์แวร์สำเร็จ",
+      software_id,
+      status: 1,
+      result: { status: 'true' }
+    });
 
   } catch (error) {
     console.error("❌ ติดตั้งซอฟต์แวร์ล้มเหลว:", error);
-    await pool.query("UPDATE software SET status = 2 WHERE id = ?", [software_id]);
+
+    // 🔹 เช็คว่า software_id มีค่าหรือไม่ ก่อนใช้งาน
+    /* if (software_id) {
+      await pool.query("UPDATE software SET status = 2 WHERE id = ?", [software_id]);
+    }
+ */
     return res.status(500).json({ message: "เกิดข้อผิดพลาดในการติดตั้ง", error: error.message });
   }
 };
+
 
 
 export const uninstallSoftware = async (req, res) => {
